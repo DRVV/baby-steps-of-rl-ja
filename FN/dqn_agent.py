@@ -62,6 +62,7 @@ class DeepQNetworkAgent(FNAgent):
                 reward += gamma * np.max(future[i])
             estimateds[i][e.a] = reward
 
+        ## train the model (loss here refers to train loss after the update)
         loss = self.model.train_on_batch(states, estimateds)
         return loss
 
@@ -130,6 +131,13 @@ class DeepQNetworkTrainer(Trainer):
 
     def train(self, env, episode_count=1200, initial_count=200,
               test_mode=False, render=False, observe_interval=100):
+        """
+        Args:
+            env: OpenAI Gym env instance
+            episode_count: number of episodes to train
+            initial_count: number of episodes to accumulate experiences before training
+
+        """
         actions = list(range(env.action_space.n))
         if not test_mode:
             agent = DeepQNetworkAgent(1.0, actions)
@@ -138,6 +146,7 @@ class DeepQNetworkTrainer(Trainer):
             observe_interval = 0
         self.training_episode = episode_count
 
+        ## defined in base class
         self.train_loop(env, agent, episode_count, initial_count, render,
                         observe_interval)
         return agent
@@ -154,6 +163,7 @@ class DeepQNetworkTrainer(Trainer):
 
     def step(self, episode, step_count, agent, experience):
         if self.training:
+            ## Experience Replay: randomly sample batch from experience
             batch = random.sample(self.experiences, self.batch_size)
             self.loss += agent.update(batch, self.gamma)
 
@@ -199,10 +209,12 @@ def main(play, is_test):
         agent = agent_class.load(obs, path)
         agent.play(obs, render=True)
     else:
+        ## train if no arguments are given
         trainer.train(obs, test_mode=is_test)
 
 
 if __name__ == "__main__":
+    # train if no arguments are given
     parser = argparse.ArgumentParser(description="DQN Agent")
     parser.add_argument("--play", action="store_true",
                         help="play with trained model")

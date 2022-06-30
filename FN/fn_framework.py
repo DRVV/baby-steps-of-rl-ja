@@ -95,8 +95,21 @@ class Trainer():
 
     def train_loop(self, env, agent, episode=200, initial_count=-1,
                    render=False, observe_interval=0):
+        """
+        train agent until the number of epsiodes reaches the secified number.
+
+        Args:
+            env: OpenAI Gym env
+            agent: FNAgent instance
+            epsiode: the number of epsiodes to train for
+            initial_count: the number of epsiodes for 'warm up': collect experiences before training
+            render: whether env.render() is called
+
+        """
         self.experiences = deque(maxlen=self.buffer_size)
+        ## shows whether the network is trainig (or just collecting experience)
         self.training = False
+        ## the number of episodes run for training (does not count ones for warmup)
         self.training_count = 0
         self.reward_log = []
         frames = []
@@ -115,9 +128,12 @@ class Trainer():
                     frames.append(s)
 
                 a = agent.policy(s)
+                ## agent acts and get an experience
                 n_state, reward, done, info = env.step(a)
                 e = Experience(s, a, reward, n_state, done)
                 self.experiences.append(e)
+                ## the following if block executes no greater than once.
+                ## if the buffer is filled, training starts even in the midst of episode
                 if not self.training and \
                    len(self.experiences) == self.buffer_size:
                     self.begin_train(i, agent)
@@ -129,7 +145,8 @@ class Trainer():
                 step_count += 1
             else:
                 self.episode_end(i, step_count, agent)
-
+                ## the following if block executes no greater than once.
+                ## if the number of epsisode run reaches `initial_count`, training starts.
                 if not self.training and \
                    initial_count > 0 and i >= initial_count:
                     self.begin_train(i, agent)
